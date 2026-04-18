@@ -11,6 +11,7 @@ import parser from '@/utils/rss-parser';
 export const route: Route = {
     path: '/',
     example: '/gameapps',
+    categories: ['game'],
     radar: [
         {
             source: ['gameapps.hk/'],
@@ -36,9 +37,12 @@ async function handler() {
                 });
                 const $ = load(response);
 
-                item.title = $('meta[property="og:title"]').attr('content') ?? $('.news-title h1').text();
+                item.title = ($('meta[property="og:title"]').attr('content') ?? $('.news-title h1').text()).replace(' - 香港手機遊戲網 GameApps.hk', '');
+                item.category = $('.tags-wrap .tag-item')
+                    .toArray()
+                    .map((el) => $(el).text().trim().replace(/^#/, ''));
 
-                $('.pages').remove();
+                $('.pages, .article-ad, .social-actions, .news-footer').remove();
 
                 // remove unwanted key value
                 delete item.content;
@@ -46,7 +50,7 @@ async function handler() {
                 delete item.isoDate;
 
                 const intro = $('div.introduction.media.news-intro div.media-body').html()?.trim();
-                const desc = $('.article-content').html()?.trim();
+                const desc = $('.article-content, .news-content').html()?.trim();
                 item.description = renderToString(
                     <>
                         {intro ? raw(intro) : null}
