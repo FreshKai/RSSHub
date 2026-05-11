@@ -44,7 +44,7 @@ async function handler(ctx: Context) {
         feed = await parseFeed.parseString(cleanXML);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(`The provided URL is not a valid RSS/Atom feed.Cause: ${errorMessage}`, { cause: e });
+        throw new Error(`The provided URL is not a valid RSS/Atom feed.Cause: ${errorMessage}`, { cause: error });
     }
 
     if (!feed || (!feed.items && !feed.title)) {
