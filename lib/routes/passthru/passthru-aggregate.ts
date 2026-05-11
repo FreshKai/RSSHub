@@ -1,19 +1,19 @@
 import type { Context } from 'hono';
 
 import type { Route } from '@/types';
+import cache from '@/utils/cache';
 import got from '@/utils/got';
 import parseFeed from '@/utils/rss-parser';
 
 export const route: Route = {
     path: '/aggregate/:aggregateRule/:aggregateStartPage/:aggregateTotal/:url',
     categories: ['other'],
-    example: '/aggregate/wordpress/1/20/https://example.com/feed',
+    example: '/aggregate/:aggregateRule/:aggregateStartPage/:aggregateTotal/:url',
     name: 'Passthru Mode With Aggregate',
     maintainers: ['Z'],
     handler,
 };
 
-// 修复：给response添加明确类型，消除any警告
 async function getFeedFromResponse(response) {
     let feed: any;
     try {
@@ -32,7 +32,7 @@ async function getFeedFromResponse(response) {
     return feed;
 }
 
-async function handler(ctx: Context) {
+async function getResult(ctx: Context) {
     const strictMode = ctx.req.query('strictMode') === 'true';
     const targetUrl = ctx.req.param('url');
     const aggregateRule = ctx.req.param('aggregateRule');
@@ -75,7 +75,6 @@ async function handler(ctx: Context) {
 
                 for (let i = aggregateStartPage + 1; i <= aggregateEndPage; i++) {
                     const pageUrl = `${targetUrl}?paged=${i}`;
-                    // 修复2：用async IIFE包裹，替换.catch()，解决no-then报错
                     requests.push(
                         (async () => {
                             try {
@@ -130,5 +129,28 @@ async function handler(ctx: Context) {
         };
     } else {
         throw new Error(`Aggregate Rule(${aggregateRule}) is not supported.`);
+    }
+}
+
+async function handler(ctx: Context) {
+    const cacheMinute = Number(ctx.req.query('cacheMinute'));
+
+    if (cacheMinute) {
+        if (Number.isNaN(cacheMinute) || cacheMinute < 5) {
+            throw new Error('cacheMinute must be >= 5.');
+        } else {
+            const cacheSeconds = cacheMinute * 60;
+            const result = await cache.tryGet(
+                ctx.req.path,
+                async () => {
+                    ctx.header('Cache-Control', `public, max-age=${cacheSeconds}`);
+                    return await getResult(ctx);
+                },
+                cacheSeconds
+            );
+            return result;
+        }
+    } else {
+        return await getResult(ctx);
     }
 }
