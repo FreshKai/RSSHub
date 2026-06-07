@@ -26,11 +26,11 @@ const formatDescriptionText = (html, { showEmojiInDescription, showLinkIconInDes
     let formattedHtml = html;
 
     if (!showEmojiInDescription) {
-        formattedHtml = formattedHtml.replaceAll(/<span class=["']?url-icon["']?><img\s[^>]*?alt=["']?([^>]+?)["']?\s[^>]*?\/><\/span>/g, '$1');
+        formattedHtml = formattedHtml.replaceAll(/<span class=["']?url-icon["']?><img\s[^>]*?alt=["']?([^>\s"']+)["']?\s[^>]*?\/><\/span>/g, '$1');
     }
 
     if (!showLinkIconInDescription) {
-        formattedHtml = formattedHtml.replaceAll(/(<a\s[^>]*>)<span class=["']?url-icon["']?><img\s[^>]*><\/span>[^<>]*?<span class=["']?surl-text["']?>([^<>]*?)<\/span><\/a>/g, '$1$2</a>');
+        formattedHtml = formattedHtml.replaceAll(/(<a\s[^>]*>)<span class=["']?url-icon["']?><img\s[^>]*><\/span>[^<>]*<span class=["']?surl-text["']?>([^<>]*)<\/span><\/a>/g, '$1$2</a>');
     }
 
     return formattedHtml;
@@ -83,22 +83,21 @@ const weiboUtils = {
                 const { page, destroy } = await getPlaywrightPage(url, {
                     onBeforeLoad: async (page) => {
                         const expectResourceTypes = new Set(['document', 'script', 'xhr', 'fetch']);
-                        await page.setUserAgent(weiboUtils.apiHeaders['User-Agent']);
-                        await page.setRequestInterception(true);
-                        page.on('request', (request) => {
+                        await page.setExtraHTTPHeaders({ 'User-Agent': weiboUtils.apiHeaders['User-Agent'] });
+                        await page.route('**/*', (route) => {
+                            const request = route.request();
                             // 1st: initial request, 302 to visitor.passport.weibo.cn; 2nd: auth ok
                             if (!expectResourceTypes.has(request.resourceType()) || times >= 2) {
-                                request.abort();
+                                route.abort();
                                 return;
                             }
                             if (request.url().startsWith(url)) {
                                 times++;
                             }
-                            request.continue();
+                            route.continue();
                         });
                     },
-                    // networkidle2 returns too early if the connection is slow
-                    gotoConfig: { waitUntil: 'networkidle0' },
+                    gotoConfig: { waitUntil: 'networkidle' },
                 });
                 const cookies: string = await getCookies(page, 'weibo.cn');
                 await destroy();
@@ -141,7 +140,7 @@ const weiboUtils = {
     })(),
     formatTitle: (html) =>
         html
-            .replaceAll(/<span class=["']url-icon["']><img\s[^>]*?alt=["']?([^>]+?)["']?\s[^>]*?\/?><\/span>/g, '$1') // 表情转换
+            .replaceAll(/<span class=["']url-icon["']><img\s[^>]*?alt=["']?([^>\s"']+)["']?\s[^>]*?\/?><\/span>/g, '$1') // 表情转换
             .replaceAll(/<span class=["']url-icon["']>(<img\s[^>]*>)<\/span>/g, '') // 去掉所有图标
             .replaceAll(/<img\s[^<]*>/g, '[图片]')
             // impossible to have inline script in weibo posts, but CodeQL complains about it
