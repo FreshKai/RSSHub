@@ -7,7 +7,7 @@ import playwright from '@/utils/playwright';
 import timezone from '@/utils/timezone';
 
 export const route: Route = {
-    path: '/pbc/goutongjiaoliu',
+    path: '/goutongjiaoliu',
     categories: ['finance'],
     example: '/gov/pbc/goutongjiaoliu',
     parameters: {},
@@ -42,7 +42,7 @@ async function handler() {
     await page.goto(link, {
         waitUntil: 'domcontentloaded',
     });
-    const html = await page.evaluate(() => document.documentElement.innerHTML);
+    const html = await page.evaluate(() => document.documentElement.getHTML());
 
     const $ = load(html);
     const list = $('font.newslist_style')
@@ -67,10 +67,10 @@ async function handler() {
                 await detailPage.goto(item.link, {
                     waitUntil: 'domcontentloaded',
                 });
-                const detailHtml = await detailPage.evaluate(() => document.documentElement.innerHTML);
+                const detailHtml = await detailPage.evaluate(() => document.documentElement.getHTML());
                 const content = load(detailHtml);
                 item.description = content('#zoom').html();
-                item.pubDate = timezone(parseDate(content('.hui12').eq(5).text()), +8);
+                item.pubDate = timezone(parseDate(content('.hui12').eq(5).text()), 8);
                 return item;
             })
         )

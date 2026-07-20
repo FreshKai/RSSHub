@@ -29,7 +29,7 @@ async function handler(ctx) {
             waitUntil: 'domcontentloaded',
         });
         await page.waitForSelector('.list');
-        const html = await page.evaluate(() => document.documentElement.innerHTML);
+        const html = await page.evaluate(() => document.documentElement.getHTML());
         await page.close();
 
         const $ = load(html);
@@ -62,11 +62,11 @@ async function handler(ctx) {
                 });
                 await page.waitForSelector('.text');
 
-                const html = await page.evaluate(() => document.documentElement.innerHTML);
+                const html = await page.evaluate(() => document.documentElement.getHTML());
                 await page.close();
                 const $ = load(html);
                 item.description = $('.text').html();
-                item.pubDate = timezone(parseDate($('meta[name="PubDate"]').attr('content')), +8);
+                item.pubDate = timezone(parseDate($('meta[name="PubDate"]').attr('content')), 8);
                 return item;
             })
         )

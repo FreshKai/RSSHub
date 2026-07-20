@@ -35,7 +35,7 @@ export const route: Route = {
 };
 
 async function handler(ctx: Context) {
-    const limit = Number.parseInt(ctx.req.query('limit') ?? '20', 10);
+    const limit = Number(ctx.req.query('limit') ?? '20');
     const rootUrl = 'https://www.perplexity.ai/hub';
 
     const { page, destroy, context } = await getPlaywrightPage(rootUrl, {
@@ -47,7 +47,7 @@ async function handler(ctx: Context) {
         },
     });
 
-    const html = await page.evaluate(() => document.documentElement.innerHTML);
+    const html = await page.evaluate(() => document.documentElement.getHTML());
     const $ = load(html);
 
     const items: DataItem[] = [];
@@ -123,7 +123,7 @@ async function handler(ctx: Context) {
                     waitUntil: 'domcontentloaded',
                 });
 
-                const contentHtml = await contentPage.evaluate(() => document.documentElement.innerHTML);
+                const contentHtml = await contentPage.evaluate(() => document.documentElement.getHTML());
                 await contentPage.close();
 
                 const $content = load(contentHtml);
