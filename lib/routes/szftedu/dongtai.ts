@@ -1,6 +1,6 @@
 import { load } from 'cheerio';
 
-import type { Route } from '@/types';
+import type { DataItem, Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
@@ -34,7 +34,7 @@ async function handler() {
     const $ = load(response.data);
     const lists = $('div.pagenews04 div ul li')
         .toArray()
-        .map((el) => ({
+        .map((el): DataItem => ({
             title: $('a', el).text(),
             link: $('a', el).attr('href'),
             pubDate: timezone(parseDate($('span[class=canedit]', el).text()), 8),
@@ -42,12 +42,12 @@ async function handler() {
 
     const items = await Promise.all(
         lists.map((item) =>
-            cache.tryGet(item.link, async () => {
+            cache.tryGet(item.link!, async () => {
                 const thisUrl = item.link;
-                const trueLink = thisUrl.includes('http') ? thisUrl : baseLink + thisUrl;
+                const trueLink = thisUrl!.includes('http') ? thisUrl : baseLink + thisUrl;
                 const response = await got(trueLink);
                 const $ = load(response.data);
-                item.description = thisUrl.includes('http') ? $('#page-content').html() : $('div.TRS_Editor').html();
+                item.description = thisUrl!.includes('http') ? $('#page-content').html() : $('div.TRS_Editor').html();
                 item.pubDate = timezone(parseDate($('#publish_time').first().text()), 8);
                 return item;
             })
