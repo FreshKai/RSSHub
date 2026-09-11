@@ -14,6 +14,7 @@ type ConfigEnvKeys =
     | 'CHROMIUM_EXECUTABLE_PATH'
     // Network
     | 'PORT'
+    | 'SOCKET'
     | 'LISTEN_INADDR_ANY'
     | 'DISABLE_IPV6'
     | 'REQUEST_RETRY'
@@ -173,6 +174,7 @@ type ConfigEnvKeys =
     | 'NHENTAI_USERNAME'
     | 'NHENTAI_PASSWORD'
     | 'NOTION_TOKEN'
+    | 'ONLYFANS_COOKIE'
     | 'PATREON_SESSION_ID'
     | 'PIANYUAN_COOKIE'
     | 'PIXABAY_KEY'
@@ -269,6 +271,7 @@ export type Config = {
     // network
     connect: {
         port: number;
+        socket?: string;
     };
     listenInaddrAny: boolean;
     disableIPv6: boolean;
@@ -565,6 +568,9 @@ export type Config = {
     notion: {
         key?: string;
     };
+    onlyfans: {
+        cookie?: string;
+    };
     patreon: {
         sessionId?: string;
     };
@@ -772,6 +778,7 @@ const calculateValue = () => {
         // network
         connect: {
             port: toInt(envs.PORT, 1200), // 监听端口
+            socket: envs.SOCKET || undefined, // listen on a unix socket instead of a TCP port
         },
         listenInaddrAny: toBoolean(envs.LISTEN_INADDR_ANY, true), // 是否允许公网连接，取值 0 1
         disableIPv6: toBoolean(envs.DISABLE_IPV6, false),
@@ -1073,6 +1080,9 @@ const calculateValue = () => {
         },
         notion: {
             key: envs.NOTION_TOKEN,
+        },
+        onlyfans: {
+            cookie: envs.ONLYFANS_COOKIE,
         },
         patreon: {
             sessionId: envs.PATREON_SESSION_ID,
